@@ -1,0 +1,110 @@
+
+    <!DOCTYPE html>  
+    <html>  
+    <head>  
+    <meta charset="UTF-8">  
+    <title>WebSocket Chat</title>  
+    </head>  
+    <body>  
+        <script type="text/javascript">  
+            var socket;  
+            function connect(){
+                if (!window.WebSocket) {  
+                    window.WebSocket = window.MozWebSocket;  
+                }  
+                if (window.WebSocket) {  
+                    var address = document.getElementById('address');  
+                    socket = new WebSocket(address.value);  
+                    socket.onmessage = function(event) {  
+                        var ta = document.getElementById('responseText');  
+                        var str=event.data;
+                        var strList=str.split(':');
+                        if(strList[0]=='read_file'){//读取文件
+                            var context = document.getElementById('context'); 
+                            context.value= str.replace(strList[0]+":","");
+                        }else if(strList[0]=='read_folder'){//读取文件夹
+                            var folder = document.getElementById('folder'); 
+                            var txt=str.replace("read_folder:","");//去掉命令,保存文件
+                            txt=txt.replace(/:/g,'\n');//所有替换为换行,/\r\n/g
+                            folder.value= txt;
+                        }else{//其它只是表示成功失败
+                            ta.value = event.data  
+                        }
+                    };  
+                    socket.onopen = function(event) {  
+                        var ta = document.getElementById('responseText');  
+                        ta.value = "连接开启!";  
+                    };  
+                    socket.onclose = function(event) {  
+                        var ta = document.getElementById('responseText');  
+                        ta.value = "连接被关闭";  
+                    };  
+                } else {  
+                    alert("你的浏览器不支持 WebSocket！");  
+                }  
+            }
+            function send(message) {  
+                if (!window.WebSocket) {  
+                    return;  
+                }  
+                if (socket.readyState == WebSocket.OPEN) {  
+                    socket.send(message);  
+                } else {  
+                    alert("连接没有开启.");  
+                }  
+            }
+            function readRoot(thiz){
+                send("read_file:: ");
+            }
+            function readFile(thiz){
+                var cmd="read_file:"+thiz.form.file.value+": ";
+                thiz.form.message.value=cmd;
+                send(cmd);
+                //防止未读取文件,覆盖错文件了
+                document.getElementById("svae_file").disabled=false;
+            }
+            function svaeFile(thiz){
+                var cmd="write_file:"+thiz.form.file.value+":"+thiz.form.context.value;
+                thiz.form.message.value=cmd;
+                send(cmd);
+                document.getElementById("svae_file").disabled=true;
+            }
+            function createFile(thiz){
+                var cmd="create_folder:"+thiz.form.file.value+": ";
+                thiz.form.message.value=cmd;
+                send(cmd);
+            }
+        </script>  
+        <form onsubmit="return false;">  
+            <h3>WebSocket：</h3>  
+            <textarea id="responseText" style="width: 500px; height: 25px;"></textarea>  
+            <br>  
+            <textarea id="folder" style="width: 350px; height: 200px;"></textarea>  
+            <br>  
+            <textarea id="context" style="width: 350px; height: 200px;"></textarea>  
+            <br>   
+            <input type="text" name="address" id="address" style="width: 300px" value="ws://10.1.12.60:8686/ws">
+            <input type="button" value="connect" onclick="connect()">    
+            <br>
+            <input type="text" name="message"  style="width: 300px" placeholder="read_file:: " value="read_file:: ">  
+            <input type="button" value="send" onclick="send(this.form.message.value)">  
+            <br>
+            <input type="text" name="file" placeholder="test/test.txt" value="test/test.txt" style="width: 300px" value="">  
+            <br>
+            <input type="button" value="读取根目录" onclick="readRoot(this)">  
+            <input type="button" value="创建目录" onclick="createFile(this)"> 
+            <input type="button" id='read_file' value="读取文件" onclick="readFile(this)">
+            <input type="button" id='svae_file' value="保存文件" onclick="svaeFile(this)" disabled='true'>
+            <br>
+            <input type="button" onclick="javascript:document.getElementById('responseText').value=''" value="clear">  
+        </form>  
+        <br>   
+        <br>   
+        <div>
+            使用指南:<br>
+    使用端口,connect,连接服务器<br>
+            send(读取根目录)<br>
+            复制文件路径,读取文件
+        </div>
+    </body>  
+    </html>  
