@@ -3,6 +3,8 @@ package com.example.websocket.util;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -80,9 +82,20 @@ public class ServerSocket extends WebSocketServer {
             	
             }else if(result[0].equals(FileMark.cmdWriteFile)){//写入文件
             	String context=msg.replace(result[0]+mark.separator+result[1]+mark.separator, "");//防止文件内容中有mark.separator
-            	int re=mark.writeFile(file,context);
-            	String txt=mark.formatReturn(FileMark.cmdWriteFile, re+"");
-            	_serverManager.SendMessageToUser(conn,txt);
+            	
+            	String readFile=replaceBlank(mark.readFile(file,"UTF-8"));//防止保存错,判断前N位相同
+            	readFile=readFile.length()>10?readFile.substring(0, 10):"";
+            	String contextPre10=replaceBlank(context);
+            	contextPre10=contextPre10.length()>10?contextPre10.substring(0, 10):"";
+            	
+            	if(readFile.equals(contextPre10)){
+            		int re=mark.writeFile(file,context);
+                	String txt=mark.formatReturn(FileMark.cmdWriteFile, re+"");
+                	_serverManager.SendMessageToUser(conn,txt);
+            	}else{
+            		String txt=mark.formatReturn(FileMark.cmdWriteFile, "是否保存错文件?");
+                	_serverManager.SendMessageToUser(conn,txt);
+            	}
             }else if(result[0].equals(FileMark.cmdCreateFile)){//创建文件
             	int re=mark.createFile(file);
             	String txt=mark.formatReturn(FileMark.cmdCreateFile, re+"");
@@ -96,7 +109,7 @@ public class ServerSocket extends WebSocketServer {
             }
         }
     }
- 
+    
     @Override
     public void onError(WebSocket conn, Exception ex) {
         Log.i("TAG","Socket Exception:"+ex.toString());
@@ -105,6 +118,18 @@ public class ServerSocket extends WebSocketServer {
     @Override
     public void onStart() {
  
+    }
+    
+    ///////////////辅助方法====================
+    //去掉回车,换行等字符
+    protected String replaceBlank(String str){
+    	String dest = "";
+        if (str!=null) {
+            Pattern p = Pattern.compile("\\s*|\t|\r|\n");
+            Matcher m = p.matcher(str);
+            dest = m.replaceAll("");
+        }
+        return dest;
     }
 }
 
