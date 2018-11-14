@@ -88,7 +88,7 @@ public class ServerSocket extends WebSocketServer {
             	String contextPre10=replaceBlank(context);
             	contextPre10=contextPre10.length()>10?contextPre10.substring(0, 10):"";
             	
-            	if(readFile.equals(contextPre10)){
+            	if(readFile.equals("")||readFile.equals(contextPre10)){
             		int re=mark.writeFile(file,context);
                 	String txt=mark.formatReturn(FileMark.cmdWriteFile, re+"");
                 	_serverManager.SendMessageToUser(conn,txt);
